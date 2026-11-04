@@ -1,0 +1,11 @@
+{
+  "name": "Cronograma PRF Administrativo",
+  "short_name": "PRF Estudos",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f3f4f6",
+  "theme_color": "#0b1c3c",
+  "icons": [
+    { "src": "https://upload.wikimedia.org/wikipedia/commons/6/6b/Coat_of_arms_of_the_Brazilian_Federal_Highway_Police.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}

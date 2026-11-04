@@ -1,0 +1,53 @@
+.xp-bar-fill { transition: width 0.5s ease-out; }
+.card-hover:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+
+/* ===== Modo Escuro =====
+   A UI é montada via template strings com classes Tailwind fixas (bg-white, text-gray-700...),
+   então em vez de reescrever cada template com variantes dark:, sobrescrevemos as classes
+   utilitárias mais usadas quando <html data-theme="dark">. */
+[data-theme="dark"] body { background-color: #0f1420; color: #e2e8f0; }
+[data-theme="dark"] .bg-white { background-color: #1a2234 !important; }
+[data-theme="dark"] .bg-gray-50,
+[data-theme="dark"] .bg-gray-100 { background-color: #10151f !important; }
+[data-theme="dark"] .bg-gray-200 { background-color: #2a3344 !important; color: #e2e8f0 !important; }
+[data-theme="dark"] .bg-gray-200:hover,
+[data-theme="dark"] .hover\:bg-gray-200:hover { background-color: #384256 !important; }
+[data-theme="dark"] .hover\:bg-gray-50:hover { background-color: #202b40 !important; }
+[data-theme="dark"] .text-gray-800,
+[data-theme="dark"] .text-gray-700,
+[data-theme="dark"] .text-gray-600 { color: #cbd5e1 !important; }
+[data-theme="dark"] .text-gray-500,
+[data-theme="dark"] .text-gray-400,
+[data-theme="dark"] .text-gray-300 { color: #8b96a8 !important; }
+[data-theme="dark"] .border-gray-100,
+[data-theme="dark"] .border-gray-200,
+[data-theme="dark"] .border-gray-300,
+[data-theme="dark"] .divide-gray-100 { border-color: #2a3344 !important; }
+[data-theme="dark"] input,
+[data-theme="dark"] textarea { background-color: #10151f; color: #e2e8f0; }
+[data-theme="dark"] .text-prfblue { color: #ffcc00 !important; }
+/* Emblemas/ícones com fundo amarelo (bg-prfyellow) mantêm o texto azul-marinho original:
+   como o fundo não muda no escuro, virar o texto pra amarelo também deixava "sumido" (amarelo sobre amarelo). */
+[data-theme="dark"] .bg-prfyellow.text-prfblue { color: #0b1c3c !important; }
+
+/* ===== Visualizador de PDF: camada de texto do PDF.js (busca/seleção) ===== */
+.textLayer {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    line-height: 1;
+    text-size-adjust: none;
+    forced-color-adjust: none;
+    transform-origin: 0 0;
+    z-index: 1;
+}
+.textLayer span, .textLayer br {
+    color: transparent;
+    position: absolute;
+    white-space: pre;
+    cursor: text;
+    transform-origin: 0% 0%;
+}
+.textLayer ::selection { background: rgba(37, 99, 235, 0.35); }
+.pdf-search-hit { background-color: rgba(255, 221, 0, 0.55); border-radius: 2px; }
+#pdf-annotation-canvas { z-index: 2; }

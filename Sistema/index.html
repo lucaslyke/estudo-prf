@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cronograma PRF Administrativo | Gamificado</title>
+    <link rel="icon" href="https://upload.wikimedia.org/wikipedia/commons/6/6b/Coat_of_arms_of_the_Brazilian_Federal_Highway_Police.svg">
+    <link rel="manifest" href="manifest.json">
+    <script>try { document.documentElement.setAttribute('data-theme', localStorage.getItem('prf_dark_mode') === '1' ? 'dark' : 'light'); } catch (e) {}</script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        prfblue: '#0b1c3c',
+                        prfyellow: '#ffcc00',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+
+    <!-- Header Gamificado -->
+    <header class="bg-prfblue text-white py-6 shadow-lg">
+        <div class="max-w-6xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center gap-4 mb-4 md:mb-0">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/Coat_of_arms_of_the_Brazilian_Federal_Highway_Police.svg" alt="Logo PRF" class="h-16">
+                <div>
+                    <h1 class="text-2xl font-bold uppercase tracking-wider text-prfyellow">Agente Administrativo</h1>
+                    <p class="text-sm opacity-80">Plano de Estudos 2026 - Rumo à Aprovação</p>
+                </div>
+            </div>
+
+            <!-- Dashboard do Usuário -->
+            <div class="bg-white/10 p-4 rounded-xl flex gap-6 border border-white/20">
+                <div class="text-center">
+                    <p class="text-xs text-prfyellow uppercase font-bold">Nível</p>
+                    <p class="text-3xl font-bold" id="level-display">1</p>
+                </div>
+                <div>
+                    <div class="flex justify-between text-xs mb-1">
+                        <span>XP Total: <span id="xp-display">0</span></span>
+                        <span id="xp-next-level">Faltam 100 XP</span>
+                    </div>
+                    <div class="w-48 h-3 bg-gray-700 rounded-full overflow-hidden">
+                        <div id="xp-bar" class="h-full bg-prfyellow xp-bar-fill" style="width: 0%;"></div>
+                    </div>
+                </div>
+                <div class="text-center">
+                    <p class="text-xs text-prfyellow uppercase font-bold"><i class="fa-solid fa-fire"></i> Ofensiva</p>
+                    <p class="text-2xl font-bold"><span id="streak-display">0</span> dias</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Status de Sincronização -->
+    <div class="max-w-6xl mx-auto px-4 py-2 flex flex-wrap items-center justify-between gap-2">
+        <p id="sync-status" class="text-sm text-gray-500 flex items-center gap-2">
+            <i class="fa-solid fa-cloud-arrow-up"></i> Sincronizando com a nuvem...
+        </p>
+        <div class="flex flex-wrap items-center gap-2">
+            <button id="view-calendar" onclick="switchView('calendar')" class="text-sm bg-prfblue text-white px-3 py-1.5 rounded-lg hover:opacity-90 flex items-center gap-2">
+                <i class="fa-solid fa-calendar-days"></i> Cronograma
+            </button>
+            <button id="view-notebook" onclick="switchView('notebook')" class="text-sm bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg hover:opacity-90 flex items-center gap-2">
+                <i class="fa-solid fa-pen-nib"></i> Caderno
+            </button>
+            <button id="view-history" onclick="switchView('history')" class="text-sm bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg hover:opacity-90 flex items-center gap-2">
+                <i class="fa-solid fa-chart-simple"></i> Histórico
+            </button>
+            <button id="view-errors" onclick="switchView('errors')" class="text-sm bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg hover:opacity-90 flex items-center gap-2" title="Questões que você errou, pra revisar e corrigir">
+                <i class="fa-solid fa-triangle-exclamation"></i> Erros <span id="errors-count" class="text-xs bg-white/60 px-1.5 py-0.5 rounded-full">0</span>
+            </button>
+
+            <!-- Menu "Mais opções": ações pouco frequentes (semana/backup/relatório/lembrete/tema) -->
+            <div class="relative">
+                <button onclick="toggleSettingsMenu(event)" id="settings-menu-btn" class="text-sm bg-gray-200 text-gray-700 w-9 h-9 rounded-lg hover:opacity-90 flex items-center justify-center" title="Mais opções">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+                <div id="settings-menu" class="hidden fixed bg-white rounded-xl shadow-2xl border border-gray-200 p-3 z-50 space-y-1.5">
+                    <button onclick="startNewWeek()" class="w-full text-sm bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 flex items-center gap-2" title="Desmarca todas as tarefas pra reusar o cronograma na semana seguinte">
+                        <i class="fa-solid fa-arrows-rotate w-4"></i> Nova Semana <span id="week-counter" class="ml-auto text-xs bg-gray-300 px-1.5 py-0.5 rounded-full">0</span>
+                    </button>
+                    <button onclick="exportBackup()" class="w-full text-sm bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 flex items-center gap-2" title="Baixa um arquivo .json com todo o seu progresso">
+                        <i class="fa-solid fa-download w-4"></i> Backup
+                    </button>
+                    <button onclick="triggerImportBackup()" class="w-full text-sm bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 flex items-center gap-2" title="Restaura um backup .json">
+                        <i class="fa-solid fa-upload w-4"></i> Restaurar
+                    </button>
+                    <button onclick="exportReport()" class="w-full text-sm bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 flex items-center gap-2" title="Gera um relatório de progresso pra imprimir ou salvar como PDF">
+                        <i class="fa-solid fa-file-pdf w-4"></i> Relatório
+                    </button>
+                    <input type="file" id="import-backup-input" accept="application/json" class="hidden" onchange="importBackupFile(this)">
+                    <hr class="border-gray-100">
+                    <div class="flex items-center gap-1.5 text-gray-700 px-1 py-1 text-sm" title="Notificação local avisando na hora de estudar (só funciona com a aba aberta)">
+                        <input type="checkbox" id="reminder-toggle" onchange="toggleReminder(this.checked)" class="w-4 h-4">
+                        <label for="reminder-toggle" class="flex items-center gap-1 cursor-pointer flex-1"><i class="fa-solid fa-bell w-4"></i> Lembrete</label>
+                        <input type="time" id="reminder-time" value="19:00" onchange="updateReminderTime(this.value)" class="bg-gray-100 border-0 rounded text-sm w-20 px-1">
+                    </div>
+                    <button onclick="toggleDarkMode()" class="w-full text-sm bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 flex items-center gap-2" title="Alternar modo escuro">
+                        <i id="dark-mode-icon" class="fa-solid fa-moon w-4"></i> Modo Escuro
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notícias do Concurso -->
+    <div id="news-section" class="max-w-6xl mx-auto px-4 pb-2">
+        <div class="bg-white rounded-xl shadow p-4">
+            <h2 class="text-sm font-bold text-prfblue uppercase mb-2 flex items-center gap-2">
+                <i class="fa-solid fa-newspaper"></i> Notícias do Concurso
+            </h2>
+            <div id="news-container" class="divide-y divide-gray-100">
+                <p class="text-sm text-gray-400 px-1 py-2">Carregando notícias...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Área principal: Calendário, Dia ou Caderno -->
+    <main class="max-w-6xl mx-auto px-4 py-8" id="schedule-container">
+        <!-- Conteúdo gerado via JavaScript -->
+    </main>
+
+    <!-- Cronograma Flutuante: tarefas de hoje, sempre visível -->
+    <div id="floating-widget" class="fixed bottom-4 right-4 z-40"></div>
+
+    <!-- Visualizador de PDF embutido: abre, anota e permite buscar texto sem sair do sistema -->
+    <div id="pdf-viewer-overlay" class="hidden fixed inset-0 z-[60] bg-gray-900 flex flex-col">
+        <div class="flex items-center gap-2 bg-prfblue text-white px-3 py-2 shrink-0 flex-wrap">
+            <i class="fa-solid fa-file-pdf text-red-400"></i>
+            <span id="pdf-viewer-title" class="text-sm font-semibold truncate max-w-[180px]"></span>
+            <div class="flex items-center gap-1">
+                <input id="pdf-search-input" type="text" placeholder="Buscar no PDF..." class="text-sm text-gray-800 rounded px-2 py-1 w-36 sm:w-48" onkeydown="if(event.key==='Enter') searchPdf(this.value)">
+                <button onclick="searchPdf(document.getElementById('pdf-search-input').value)" class="text-xs bg-white/10 hover:bg-white/20 px-2 py-1.5 rounded" title="Buscar"><i class="fa-solid fa-magnifying-glass"></i></button>
+                <button onclick="pdfSearchJump(-1)" class="text-xs bg-white/10 hover:bg-white/20 px-2 py-1.5 rounded" title="Resultado anterior"><i class="fa-solid fa-chevron-up"></i></button>
+                <button onclick="pdfSearchJump(1)" class="text-xs bg-white/10 hover:bg-white/20 px-2 py-1.5 rounded" title="Próximo resultado"><i class="fa-solid fa-chevron-down"></i></button>
+                <span id="pdf-search-status" class="text-xs text-white/70 whitespace-nowrap"></span>
+            </div>
+            <a id="pdf-viewer-newtab" href="#" target="_blank" class="text-xs text-white/70 hover:text-white flex items-center gap-1 ml-auto shrink-0"><i class="fa-solid fa-up-right-from-square"></i> Nova aba</a>
+            <button onclick="closePdfViewer()" class="text-white/80 hover:text-white text-xl leading-none px-2 shrink-0" title="Fechar (Esc)"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="pdf-toolbar-container" class="flex flex-wrap items-center gap-3 bg-gray-800 px-3 py-2 shrink-0"></div>
+        <div class="flex items-center justify-center gap-3 bg-gray-800 border-t border-white/10 py-1.5 shrink-0 text-white">
+            <button onclick="changePdfPage(-1)" class="px-2 py-1 rounded border border-white/30 hover:bg-white/10"><i class="fa-solid fa-chevron-left"></i></button>
+            <span id="pdf-page-indicator" class="text-sm">Página 1 / 1</span>
+            <button onclick="changePdfPage(1)" class="px-2 py-1 rounded border border-white/30 hover:bg-white/10"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+        <div id="pdf-page-container" class="flex-1 overflow-auto flex justify-center items-start p-4">
+            <div id="pdf-page-stack" class="relative bg-white shadow-2xl shrink-0">
+                <canvas id="pdf-render-canvas"></canvas>
+                <div id="pdf-text-layer" class="textLayer"></div>
+                <canvas id="pdf-annotation-canvas" class="absolute inset-0" style="touch-action:none; cursor:none;"></canvas>
+                <div id="pdf-annotation-cursor" class="absolute rounded-full border-2 pointer-events-none" style="display:none; transform:translate(-50%, -50%);"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="questions-data.js"></script>
+    <script src="script.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+        }
+    </script>
+</body>
+</html>
